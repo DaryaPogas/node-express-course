@@ -21,16 +21,17 @@ const getBody = (req, callback) => {
 };
 
 // here, you could declare one or more variables to store what comes back from the form.
-let item = "Enter something below.";
-
+//let item = "Enter something below.";
+let randomNum = Math.floor(Math.random() * 10) + 1;
+let text = 'Guess a number between 1 and 10'
 // here, you can change the form below to modify the input fields and what is displayed.
 // This is just ordinary html with string interpolation.
 const form = () => {
   return `
   <body>
-  <p>${item}</p>
+  <p>${text}</p>
   <form method="POST">
-  <input name="item"></input>
+  <input type='number' name="quess" min='1' max='10' required></input>
   <button type="submit">Submit</button>
   </form>
   </body>
@@ -60,5 +61,11 @@ const server = http.createServer((req, res) => {
   }
 });
 
+server.on("request", (req) => {
+  console.log("event received: ", req.method, req.url);
+});  
+
 server.listen(3000);
 console.log("The server is listening on port 3000.");
+
+//this is my comment
