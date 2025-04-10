@@ -1,63 +1,45 @@
-//console.log('Express Tutorial')
 const express = require('express')
 const app = express()
-const { products } = require("./data");
+//const { products, people} = require('./data')
+const people = require('./routes/people')
 
-app.use(express.static('./public'))
 
-app.get('/api/v1/test', (req,res) =>{
-    //res.json({message: 'It worked'})
-    res.json(products)
-})
+// const logger = (req, res, next) => {
+//   const method = req.method;
+//   const url = req.url;
+//   const time = new Date().getFullYear();
+//   console.log(method, url, time);
+//   next();
+// };
 
-app.get('/api/v1/products/:productID', (req,res) =>{
-    console.log(req.params)
-    const productID = parseInt(req.params.productID)
+// app.get('/', logger, (req, res) =>{
+//     res.send('home')
+// })
 
-    if(isNaN(productID)){
-        return res.status(404).json({
-            message: ' that product was not found'
-        })
-    }
-    const singleProduct = products.find((product) => product.id === productID)
+//app.use(logger)  - the second way to invoke logger middleware
 
-    if(!singleProduct){
-        return res.status(404).send('Product not found')
-    }
-    res.json(singleProduct)
-})
+// static assets
+app.use(express.static('./methods-public'))
 
-app.get('/api/v1/query', (req,res) =>{
-    const {search, limit, maxPrice} = req.query;
-    let sortedProducts = [...products]
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
-    if(search){
-        sortedProducts = sortedProducts.filter((product) => {
-            return product.name.startsWith(search)
-        })
-    }
-    if (limit) {
-      sortedProducts = sortedProducts.slice(0, Number(limit)) 
-    }
-    if(maxPrice){
-        const maxPriceFloat = parseFloat(maxPrice);
-         if (isNaN(maxPriceFloat)) {
-           return res.status(404).json({
-             message: " invalid price value",
-           });
-         }
-       sortedProducts = sortedProducts.filter(product => product.price <= maxPriceFloat)
-    }
-    res.status(200).json(sortedProducts)
-    
-})
+// app.get('/api/v1/people', (req,res) =>{
+//     res.status(200).json({success: true, data: people})
+// })
+
+// app.post('/api/v1/people', (req, res) =>{
+//     const {name} = req.body
+//     if (!name){
+//         return res.status(400).json({success:false, msg:'Please provide a name'})
+//     }
+//     res.status(201).json({success:true, data:[...people, name]})
+// })
+
+app.use('/api/v1/people', people)
 
 
 
-app.all("*", (req, res) => {
-  res.status(404).send("page not found");
-}); 
-
-app.listen(3000, () =>{
-    console.log('server is listening on port 3000...')
-})
+app.listen(5003, () => {
+  console.log("server is listening on port 5003..");
+});
