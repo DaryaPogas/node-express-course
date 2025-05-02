@@ -3,63 +3,69 @@ const Product = require('../models/product')
 const getAllProductsStatic = async (req,res) =>{
     //throw new Error ('testing async errors')
     const search = 'aaa'
-    const products = await Product.find({}.sort('name'))
+    const products = await Product.find({}).sort('name')
     res.status(200).json({ products, nbHits: products.length });
 }
 
 const getAllProducts = async (req, res) => {
-  const {featured, company, name, sort, fields, numericFilters} = req.query  
-  const queryObject = {}
-  if(featured){
-    queryObject.featured = featured === 'true'? true:false
-  }  
-  if (company) {
-    queryObject.company = company
-  } 
-  if (name) {
-    queryObject.name = { $regex: name, $options: 'i' };
-  } 
+  const { featured, company, name, sort, fields, numericFilters } = req.query;
+  const queryObject = {};
+
+  if (featured) queryObject.featured = featured === "true";
+  if (company) queryObject.company = company;
+  if (name) queryObject.name = { $regex: name, $options: "i" };
 
   if (numericFilters) {
     const operatorMap = {
-      ">": "gt",
-      ">=": "gte",
-      "=": "eq",
-      "<": "lt",
-      "<=": "lte",
+      ">": "$gt",
+      ">=": "$gte",
+      "=": "$eq",
+      "<": "$lt",
+      "<=": "$lte",
     };
-   const regEx = /\b(<|>|>=|=|<|<=)\b/g;
-   let filters = numericFilters.replace(regEx, (match)=>`-${operatorMap[match]}-`)
-   const options = ['price','rating']
-   filters = filters.split(',').forEach((item) => {
-    const [field, operator, value] = item.split('-')
-    if(options.includes(field)) {
-        queryObject[field] = {[operator]: Number(value)}
-    }
-   })
+
+    const conditions = numericFilters.split(",").map((c) => c.trim());
+    conditions.forEach((condition) => {
+      const match = condition.match(/(>=|<=|>|<|=)/);
+      if (!match) return;
+
+      const operator = match[0];
+      const parts = condition.split(operator);
+      const field = parts[0].trim();
+      const value = parts.slice(1).join("").trim();
+
+      if (["price", "rating"].includes(field)) {
+        queryObject[field] = {
+          ...(queryObject[field] || {}),
+          [operatorMap[operator]]: Number(value),
+        };
+      }
+    });
   }
 
-console.log(queryObject);
-  let result =  Product.find(queryObject)
-  //sort
-  if(sort) {
-    const sortList = sort.split(',').join(' ')
-    result = result.sort(sortList)
-  }
-  else {
-    result = result.sort('createdAt')
+  console.log("Final queryObject:", JSON.stringify(queryObject, null, 2));
+
+  let query = Product.find(queryObject);
+
+//sort
+  if (sort) {
+    query = query.sort(sort.split(",").join(" "));
+  } else {
+    query = query.sort("-createdAt");
   }
 
-if (fields) {
-  const fieldList = fields.split(",").join(' ');
-  result = result.select(fieldList);
-} 
-const page = Number(req.query.page) || 1
-const limit = Number(req.query.limit) || 10
-const skip = (page - 1) * limit
+  // fields
+  if (fields) {
+    query = query.select(fields.split(",").join(" "));
+  }
 
-result = result.skip(skip).limit(limit)
-  const products = await result
+  //  pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  query = query.skip(skip).limit(limit);
+
+  const products = await query;
   res.status(200).json({ products, nbHits: products.length });
 };
 
